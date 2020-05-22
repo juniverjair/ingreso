@@ -12,37 +12,42 @@ import random
 # Create your models here.
 
 
-def enviar_correo(asunto, mensaje, destinatarios, qr):
+def enviar_correo(mensaje1, destinatarios, qr):
     # Generar codigo QR:
 
-    json = {}
-    json["cod"] = qr
+    for e in destinatarios:
+        asunto = '''ACCESO TIA MATRIZ - REUNION ID ''' + str(qr)
 
-    cadena = str(json)
-    imagen = qrcode.make(cadena)
-    archivo_imagen = open("qr_reunion.png", 'wb')
+        mensaje = '''Estimado(a) ''' + str(e) + ''', el Sistema de Control de Ingreso para proveedores ha generado una reunión para el ''' + mensaje1
+        json = {}
+        json["cod"] = qr
+        json["email"] = e
 
-    imagen.save(archivo_imagen)
-    archivo_imagen.close()
+        cadena = str(json)
+        imagen = qrcode.make(cadena)
+        archivo_imagen = open("qr_reunion.png", 'wb')
 
-    subject = asunto
-    message = mensaje
-    sender =  'juniver.roman@tia.com.ec'
-    recipients = destinatarios
+        imagen.save(archivo_imagen)
+        archivo_imagen.close()
 
-    # cc_myself = form.cleaned_data['cc_myself']
-    #
-    # if cc_myself:
-    #     recipients.append(sender)
+        subject = asunto
+        message = mensaje
+        sender =  'juniver.roman@tia.com.ec'
+        recipients = [e]
 
-    mail = EmailMessage(subject, message, sender, recipients)
+        # cc_myself = form.cleaned_data['cc_myself']
+        #
+        # if cc_myself:
+        #     recipients.append(sender)
 
-    # mail.attach(filename = "acceso.png", mimetype = "image/png", content = imagen)
+        mail = EmailMessage(subject, message, sender, recipients)
 
-    mail.attach_file('./qr_reunion.png')
-    # mail.attach_file('./ff.ics')
+        # mail.attach(filename = "acceso.png", mimetype = "image/png", content = imagen)
 
-    mail.send(fail_silently=False)
+        mail.attach_file('./qr_reunion.png')
+        # mail.attach_file('./ff.ics')
+
+        mail.send(fail_silently=False)
 
 class Sala(models.Model):
     PISOS = (
@@ -64,7 +69,7 @@ class Sala(models.Model):
 class Reunion(models.Model):
     id = models.AutoField(primary_key=True)
     autor = models.ForeignKey(User, on_delete=models.CASCADE, editable=False)
-    cedula = models.CharField(max_length=10)
+    cedula = models.CharField(max_length=10, null=True, blank=True)
     nombre = models.CharField(max_length=45)
     razon_social = models.CharField(max_length=45, null=True)
     correo = MultiEmailField(help_text="A esta lista de email se enviará el QR de acceso, sepárelos mediante ENTER")
@@ -86,19 +91,19 @@ class Reunion(models.Model):
         super().save(*args, **kwargs)
 
         if self.activa == True:
-            asunto = '''ACCESO TIA MATRIZ - REUNION ID ''' + str(self.id)
-
-            mensaje = '''Estimado(a) ''' + self.nombre + ''', el Sistema de Control de Ingreso para proveedores ha generado una reunión para el ''' + str(self.horario.strftime("%Y-%m-%d %H:%M:%S")) + ''' en el sala ''' + str(self.sala) + '''. Recuerde llegar a tiempo, caso contrario no podrá ingresar. El código QR adjunto le permitirá su ingreso 10 minutos antes o después de la hora indicada.''' # + str(self.cantidad_personas) + ''' persona(s).'''
+            mensaje = str(self.horario.strftime("%Y-%m-%d %H:%M:%S")) + ''' en el piso #''' + str(self.sala.piso) + ''', sala ''' + str(self.sala) + '''. Recuerde llegar a tiempo, caso contrario no podrá ingresar. El código QR adjunto le permitirá su ingreso 10 minutos antes o después de la hora indicada.''' # + str(self.cantidad_personas) + ''' persona(s).'''
 
             try:
-                enviar_correo(asunto, mensaje, self.correo, str(self.id))
+                enviar_correo(mensaje, self.correo, str(self.id))
             except:
-                enviar_correo("ERROR", "SE INFORMA QUE SE PRESENTA UN ERROR EN LA REUNION CON CODIGO " + str(self.id), ["juniver.roman@tia.com.ec"], "test")
+                enviar_correo("ERROR SE INFORMA QUE SE PRESENTA UN ERROR EN LA REUNION CON CODIGO " + str(self.id), ["juniver.roman@tia.com.ec"], "test")
 
 class Historial(models.Model):
 
     id = models.AutoField(primary_key=True)
     reunion = models.ForeignKey(Reunion, on_delete=models.CASCADE)
+    autor = models.ForeignKey(User, on_delete=models.CASCADE, editable=False)
+    correo = models.EmailField()
     ingreso = models.BooleanField(default=True)
     detalle = models.TextField(max_length=300)
     create_at = models.DateTimeField(default=datetime.now(), editable=False)

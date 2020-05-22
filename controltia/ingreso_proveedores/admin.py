@@ -23,6 +23,12 @@ class ReunionAdmin(admin.ModelAdmin):
 
 class HistorialAdmin(admin.ModelAdmin):
 
+    def get_queryset(self, request):
+        qs = super(HistorialAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(autor=request.user)
+
     list_filter = ['ingreso','create_at']
 
     # search_fields = ['cedula','nombre','razon_social','correo']
