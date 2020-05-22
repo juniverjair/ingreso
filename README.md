@@ -1,2 +1,2 @@
-# ingreso
+# Control de Ingreso
 TIA SA
