@@ -2,5 +2,5 @@ Django==2.2
 django-multi-email-field==0.6.1
 psycopg2-binary==2.8.5
 qrcode==6.1
-requests==2.23.0
+requests==2.31.0
 
